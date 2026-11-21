@@ -1,19 +1,30 @@
-export async function onRequest(context) {
-  const host = new URL(context.request.url).hostname;
+export async function onRequestGet(context) {
+  const host = context.request.headers.get("host");
 
-  return new Response(
-`User-agent: *
-Disallow: /test/
-Disallow: /assets/
+  let sitemaps = [];
+
+  for (let i = 1; i <= 100; i++) {
+    const num = String(i).padStart(2, "0");
+    sitemaps.push(`https://${host}/sitemap/01/sitemap${num}.xml`);
+  }
+
+  // shuffle
+  for (let i = sitemaps.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [sitemaps[i], sitemaps[j]] = [sitemaps[j], sitemaps[i]];
+  }
+
+  const sitemapList = sitemaps.map(url => `Sitemap: ${url}`).join("\n");
+
+  const body = `User-agent: *
 Allow: /
 
-Sitemap: https://${host}/sitemap.xml
-`,
-    {
-      headers: {
-        "Content-Type": "text/plain; charset=UTF-8",
-        "Cache-Control": "public, max-age=5184000"
-      }
+${sitemapList}`;
+
+  return new Response(body, {
+    headers: {
+      "Content-Type": "text/plain; charset=UTF-8",
+      "Cache-Control": "public, max-age=3600"
     }
-  );
+  });
 }
